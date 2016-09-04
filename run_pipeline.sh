@@ -1,7 +1,7 @@
 #!/bin/bash
 
-
-BASEDIR=/home/julia/src/homemade/microtubules_cleaned
+# Specify here location to git repos directory in which this shell script resides
+BASEDIR=/PATH/TO/MAINDIRECTORY
 
 # Dataset Parameters
 VOXEL_SIZEX=4.6
