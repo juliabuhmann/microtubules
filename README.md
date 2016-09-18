@@ -47,4 +47,8 @@ Get help:
     $ python scripts/extract_candidates.py --help
     $ python scripts/run_ILP_model.py --help
 
-Intermediate and final results are output in form of knossos skeletons and can be visualized with http://knossostool.org/. 
+Intermediate and final results are output in form of knossos skeletons and can be visualized with http://knossostool.org/.
+Probability map is created with the machine learning and annotation tool http://ilastik.org/.
+
+The small example EM dataset is provided by courtesy of the the Albert Cardona Lab at the Howard Hughes
+Medical Institute Janelia Research Campus.
