@@ -1,5 +1,5 @@
 __author__ = 'julia'
-#!/usr/bin/python
+# !/usr/bin/python
 
 try:
     from mayavi import mlab
@@ -17,18 +17,15 @@ import networkx as nx
 from skeleton import knossos_utils
 import utils
 
-
 from numpy import genfromtxt
 import math
-
-
 
 
 class ILPParameters(object):
     # As proposed in python Cookbook. (usage a bit like a c struct)
     def __init__(self, dummy_edge_cost=100, distance_cost=1, comb_angle_cost=5, angle_cost_factor=0,
                  selection_cost=-50, pairwise=True, exclusive_distance=False, exclusive_distance_threshold=25, **kwds):
-        #First set default values
+        # First set default values
         default_dic = {}
         default_dic['dummy_edge_cost'] = dummy_edge_cost
         default_dic['distance_cost'] = distance_cost
@@ -39,15 +36,12 @@ class ILPParameters(object):
         default_dic['exclusive_distance'] = exclusive_distance
         default_dic['exclusive_distance_threshold'] = exclusive_distance_threshold
 
-
         self.__dict__.update(default_dic)
         self.__dict__.update(kwds)
 
 
-
-
 def get_angle(g, i, cur_dir_vec, noise_sigma=False):
-    #Get ground truth direction vectors
+    # Get ground truth direction vectors
     # #Get ground truth direction vectors
     # pos = g.nx_graph.node[node_id]['position']
     # if tuple(pos) in all_skeletons.coords_to_id:
@@ -61,7 +55,6 @@ def get_angle(g, i, cur_dir_vec, noise_sigma=False):
     else:
         dir_vec_of_node = g.nx_graph.node[i]['dir_vector']
 
-
     # dir_vec_of_node = np.array([0, 0, 1])
     angle = utils.angle_between_vecs(dir_vec_of_node, cur_dir_vec)
     if noise_sigma:
@@ -74,7 +67,7 @@ def get_angle(g, i, cur_dir_vec, noise_sigma=False):
     if angle > np.pi:
         angle = angle - np.pi
 
-    if angle > np.pi/2.:
+    if angle > np.pi / 2.:
         angle = np.abs(angle - np.pi)
 
     if math.isnan(angle):
@@ -90,13 +83,14 @@ def create_graph_from_solution(g_old, solution):
     nx_skeleton.initialize_from_edgelist(position_dic, solution, only_from_edgelist=True)
     return nx_skeleton
 
+
 def check_consistency(comb_solution, solution):
     print "checking consistency"
     for comb_edge, sol in comb_solution.iteritems():
         node_id = comb_edge[0]
         neighbour1 = comb_edge[1]
         neighbour2 = comb_edge[2]
-        if sol==1.0:
+        if sol == 1.0:
             # Check for those combi edges that are on, that also the corresponding edge variables are on
             assert solution[node_id, neighbour1] == 1
             assert solution[node_id, neighbour2] == 1
@@ -110,14 +104,14 @@ def add_pairwaisefactors_to_model(model, g, params, variables):
     for node_id, node_attr in g.nx_graph.nodes_iter(data=True):
         neighbours = g.nx_graph.neighbors(node_id)
         neighbours.sort()
-        for ii in range(len(neighbours)-1):
+        for ii in range(len(neighbours) - 1):
             neighbour_id1 = neighbours[ii]
-            for jj in range(len(neighbours)-ii-1):
-                neighbour_id2 = neighbours[jj+ii+1]
+            for jj in range(len(neighbours) - ii - 1):
+                neighbour_id2 = neighbours[jj + ii + 1]
                 spanning_angle = node_attr['spanning_angles'][(neighbour_id1, neighbour_id2)]
                 edge_combinations[node_id, neighbour_id1, neighbour_id2] = \
-                    model.addVar(obj=(np.abs(spanning_angle-np.pi)*params.comb_angle_cost)**2, vtype=GRB.BINARY,
-                                 name='node_%i_edge_%i_%i' %(node_id, neighbour_id1, neighbour_id2))
+                    model.addVar(obj=(np.abs(spanning_angle - np.pi) * params.comb_angle_cost) ** 2, vtype=GRB.BINARY,
+                                 name='node_%i_edge_%i_%i' % (node_id, neighbour_id1, neighbour_id2))
 
     model.update()
     # Add corresponding constraints to new introduced variables (specifically,
@@ -126,16 +120,19 @@ def add_pairwaisefactors_to_model(model, g, params, variables):
     for node_id, node_attr in g.nx_graph.nodes_iter(data=True):
         neighbours = g.nx_graph.neighbors(node_id)
         neighbours.sort()
-        for ii in range(len(neighbours)-1):
+        for ii in range(len(neighbours) - 1):
             neighbour_id1 = neighbours[ii]
-            for jj in range(len(neighbours)-ii-1):
-                neighbour_id2 = neighbours[jj+ii+1]
-                model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id1])
-                model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id2])
-                model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] +1 >=
+            for jj in range(len(neighbours) - ii - 1):
+                neighbour_id2 = neighbours[jj + ii + 1]
+                model.addConstr(
+                    edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id1])
+                model.addConstr(
+                    edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id2])
+                model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] + 1 >=
                                 variables[node_id, neighbour_id2] + variables[node_id, neighbour_id1])
     model.update()
     return model, edge_combinations
+
 
 def add_proximity_exclusivity(model, g, selection_cost_variables, distance_threshold):
     for node_id, node_attr in g.nx_graph.nodes_iter(data=True):
@@ -147,13 +144,15 @@ def add_proximity_exclusivity(model, g, selection_cost_variables, distance_thres
             if distance < distance_threshold:
                 neighbours_in_proximity.append(neighbour)
         if neighbours_in_proximity:
-            model.addConstr(selection_cost_variables[node_id]+
-                            1./len(neighbours_in_proximity)*quicksum(selection_cost_variables[neighbour] for neighbour in neighbours_in_proximity) <= 1)
+            model.addConstr(selection_cost_variables[node_id] +
+                            1. / len(neighbours_in_proximity) * quicksum(
+                                selection_cost_variables[neighbour] for neighbour in neighbours_in_proximity) <= 1)
     model.update()
     return model
 
+
 def calculate_ILP_linear(g, params,
-                  verbose=True, visualize=False, timelimit=120):
+                         verbose=True, visualize=False, timelimit=120):
     # This is a reimplementaiton of the original version of setting up the ILP for microtubule tracking. (as described
     # in paper)
     if verbose:
@@ -174,33 +173,34 @@ def calculate_ILP_linear(g, params,
         if params.angle_cost_factor != 0:
             angle1 = get_angle(g, i, cur_dir_vector)
             angle2 = get_angle(g, j, cur_dir_vector)
-            angle_cost = (angle1 + angle2)*params.angle_cost_factor
+            angle_cost = (angle1 + angle2) * params.angle_cost_factor
 
-
-        variables[i, j] = model.addVar(obj=(dist*params.distance_cost+angle_cost)**1, vtype=GRB.BINARY, name='e'+str(i)+'_'+str(j))
+        variables[i, j] = model.addVar(obj=(dist * params.distance_cost + angle_cost) ** 1, vtype=GRB.BINARY,
+                                       name='e' + str(i) + '_' + str(j))
         variables[j, i] = variables[i, j]
-
 
     sink_variables = {}
     selection_cost_variables = {}
     for node_id in g.nx_graph.nodes_iter():
         # Add dummy node (sink), here the costs decide about how expensive it is to open / close a chain
-        sink_variables[node_id] = model.addVar(obj=params.dummy_edge_cost, vtype=GRB.BINARY, name='dummy_%s' %str(node_id))
+        sink_variables[node_id] = model.addVar(obj=params.dummy_edge_cost, vtype=GRB.BINARY,
+                                               name='dummy_%s' % str(node_id))
         # Add cost for selecting a candidate (this is uniformly set,
         # but can potentially exchanged with adaptive costs from underlying pipeline)
-        selection_cost_variables[node_id] = model.addVar(obj=params.selection_cost, vtype=GRB.BINARY, name='selectioncost_%s' %str(node_id))
+        selection_cost_variables[node_id] = model.addVar(obj=params.selection_cost, vtype=GRB.BINARY,
+                                                         name='selectioncost_%s' % str(node_id))
     model.update()
 
     # Add consistency constraints for guaranteeing coherent topology
     # If a candidate is selected, two edge variables should also be selected
     for node_id in g.nx_graph.nodes_iter():
         neighbours = g.nx_graph.neighbors(node_id)
-        model.addConstr(2*selection_cost_variables[node_id] -(quicksum(variables[node_id, j] for j in neighbours) +
-                        sink_variables[node_id]) <= 0,
-                        name='nodeconstraint1_%i' %node_id)
-        model.addConstr(2*selection_cost_variables[node_id] -(quicksum(variables[node_id, j] for j in neighbours) +
-                        sink_variables[node_id]) >= 0,
-                        name='nodeconstraint2_%i' %node_id)
+        model.addConstr(2 * selection_cost_variables[node_id] - (quicksum(variables[node_id, j] for j in neighbours) +
+                                                                 sink_variables[node_id]) <= 0,
+                        name='nodeconstraint1_%i' % node_id)
+        model.addConstr(2 * selection_cost_variables[node_id] - (quicksum(variables[node_id, j] for j in neighbours) +
+                                                                 sink_variables[node_id]) >= 0,
+                        name='nodeconstraint2_%i' % node_id)
 
     # model.addConstr(selection_cost_variables[0] == 1,
     #                 name='nodeconstraint3_%i' %node_id)
@@ -210,8 +210,9 @@ def calculate_ILP_linear(g, params,
     for edge in g.nx_graph.edges_iter():
         node_id1 = edge[0]
         node_id2 = edge[1]
-        model.addConstr(2*variables[edge]-selection_cost_variables[node_id1] - selection_cost_variables[node_id2] <= 0,
-                        name='edgeconstraint_%i_%i' %edge)
+        model.addConstr(
+            2 * variables[edge] - selection_cost_variables[node_id1] - selection_cost_variables[node_id2] <= 0,
+            name='edgeconstraint_%i_%i' % edge)
 
     model.update()
     print "Intermediate number of variables before adding combination aspect", model.NumVars
@@ -225,7 +226,7 @@ def calculate_ILP_linear(g, params,
     if verbose:
         print "starting Optimization"
         print "Number of variables %i" % model.NumVars
-        print "Number of linear constraints %i" %model.NumConstrs
+        print "Number of linear constraints %i" % model.NumConstrs
     # model.display()
     model.optimize()
 
@@ -251,7 +252,7 @@ def calculate_ILP_linear(g, params,
     return nx_skeleton_solution, model
 
 
-def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, comb_angle_cost = 5,
+def calculate_ILP(g, quadratic=False, dummy_edge_cost=100, distance_cost=1, comb_angle_cost=5,
                   verbose=True, visualize=False, linear=False, angle_cost_factor=0):
     print "starting constructing ILP"
     model = Model()
@@ -268,30 +269,30 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
         if angle_cost_factor != 0:
             angle1 = get_angle(g, i, cur_dir_vector)
             angle2 = get_angle(g, j, cur_dir_vector)
-            angle_cost = (angle1 + angle2)*angle_cost_factor
+            angle_cost = (angle1 + angle2) * angle_cost_factor
             # angle = utils.angle_between_vecs(dir_vec_of_node, cur_dir_vec)
         # print dist
         # print angle1, angle2, cur_dir_vector
-        variables[i, j] = model.addVar(obj=(dist*distance_cost+angle_cost)**1, vtype=GRB.BINARY, name='e'+str(i)+'_'+str(j))
+        variables[i, j] = model.addVar(obj=(dist * distance_cost + angle_cost) ** 1, vtype=GRB.BINARY,
+                                       name='e' + str(i) + '_' + str(j))
         variables[j, i] = variables[i, j]
     # This is the number for the dummy node. This guarantees that the id is not already occcupied by a node id
-    n = np.max(g.nx_graph.nodes())+1
+    n = np.max(g.nx_graph.nodes()) + 1
 
     g.add_geom_features_to_edges()
     g.add_geom_features_to_nodes()
     for node_id in g.nx_graph.nodes_iter():
         # Add dummy node, here the costs decide about how expensive it is to open / close a chain
-        variables[node_id, n] = model.addVar(obj=dummy_edge_cost, vtype=GRB.BINARY, name='dummy1_%s' %str(node_id))
-        variables[node_id, n+1] = model.addVar(obj=dummy_edge_cost, vtype=GRB.BINARY, name='dummy2_%s' %str(node_id))
+        variables[node_id, n] = model.addVar(obj=dummy_edge_cost, vtype=GRB.BINARY, name='dummy1_%s' % str(node_id))
+        variables[node_id, n + 1] = model.addVar(obj=dummy_edge_cost, vtype=GRB.BINARY, name='dummy2_%s' % str(node_id))
         variables[n, node_id] = variables[node_id, n]
-        variables[n+1, node_id] = variables[node_id, n+1]
+        variables[n + 1, node_id] = variables[node_id, n + 1]
     model.update()
 
     for node_id in g.nx_graph.nodes_iter():
-
         neighbours = g.nx_graph.neighbors(node_id)
-        neighbours.extend([n, n+1])
-        model.addConstr(quicksum(variables[node_id, j] for j in neighbours) == 2, name='node_%i' %node_id)
+        neighbours.extend([n, n + 1])
+        model.addConstr(quicksum(variables[node_id, j] for j in neighbours) == 2, name='node_%i' % node_id)
 
     model.update()
     print "Intermediate number of variables before adding combination aspect", model.NumVars
@@ -305,12 +306,13 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
 
             # Add the quadratic terms for the combination of each edge pair incident to the same node
 
-            for ii in range(len(neighbours)-1):
+            for ii in range(len(neighbours) - 1):
                 neighbour_id1 = neighbours[ii]
-                for jj in range(len(neighbours)-ii-1):
-                    neighbour_id2 = neighbours[jj+ii+1]
+                for jj in range(len(neighbours) - ii - 1):
+                    neighbour_id2 = neighbours[jj + ii + 1]
                     spanning_angle = node_attr['spanning_angles'][(neighbour_id1, neighbour_id2)]
-                    quad.add(variables[node_id, neighbour_id1]*variables[node_id, neighbour_id2]*(np.abs(spanning_angle-np.pi)*comb_angle_cost)**2)
+                    quad.add(variables[node_id, neighbour_id1] * variables[node_id, neighbour_id2] * (
+                    np.abs(spanning_angle - np.pi) * comb_angle_cost) ** 2)
 
         # Add linear costs to quadratic expression
         for edge in g.nx_graph.edges_iter(data=True):
@@ -320,14 +322,14 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
             cur_dir_vector = edge[2]['dir_vector']
             angle1 = get_angle(g, i, cur_dir_vector)
             angle2 = get_angle(g, j, cur_dir_vector)
-            angle_cost = (angle1 + angle2)*angle_cost_factor
-            total_cost = angle_cost + dist*distance_cost
-            quad.add(variables[i, j]*(total_cost))
+            angle_cost = (angle1 + angle2) * angle_cost_factor
+            total_cost = angle_cost + dist * distance_cost
+            quad.add(variables[i, j] * (total_cost))
 
         for node_id in g.nx_graph.nodes_iter():
             # Add dummy node, here the costs decide about how expensive it is to open / close a chain
-            quad.add(variables[node_id, n]*dummy_edge_cost)
-            quad.add(variables[node_id, n+1]*dummy_edge_cost)
+            quad.add(variables[node_id, n] * dummy_edge_cost)
+            quad.add(variables[node_id, n + 1] * dummy_edge_cost)
         print "model collection costs finished"
         model.setObjective(quad)
         model.update()
@@ -339,14 +341,14 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
         for node_id, node_attr in g.nx_graph.nodes_iter(data=True):
             neighbours = g.nx_graph.neighbors(node_id)
             neighbours.sort()
-            for ii in range(len(neighbours)-1):
+            for ii in range(len(neighbours) - 1):
                 neighbour_id1 = neighbours[ii]
-                for jj in range(len(neighbours)-ii-1):
-                    neighbour_id2 = neighbours[jj+ii+1]
+                for jj in range(len(neighbours) - ii - 1):
+                    neighbour_id2 = neighbours[jj + ii + 1]
                     spanning_angle = node_attr['spanning_angles'][(neighbour_id1, neighbour_id2)]
                     edge_combinations[node_id, neighbour_id1, neighbour_id2] = \
-                        model.addVar(obj=(np.abs(spanning_angle-np.pi)*comb_angle_cost)**2, vtype=GRB.BINARY,
-                                     name='node_%i_edge_%i_%i' %(node_id, neighbour_id1, neighbour_id2))
+                        model.addVar(obj=(np.abs(spanning_angle - np.pi) * comb_angle_cost) ** 2, vtype=GRB.BINARY,
+                                     name='node_%i_edge_%i_%i' % (node_id, neighbour_id1, neighbour_id2))
 
         model.update()
         # Add corresponding constraints to new introduced variables (specifically,
@@ -355,24 +357,22 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
         for node_id, node_attr in g.nx_graph.nodes_iter(data=True):
             neighbours = g.nx_graph.neighbors(node_id)
             neighbours.sort()
-            for ii in range(len(neighbours)-1):
+            for ii in range(len(neighbours) - 1):
                 neighbour_id1 = neighbours[ii]
-                for jj in range(len(neighbours)-ii-1):
-                    neighbour_id2 = neighbours[jj+ii+1]
-                    model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id1])
-                    model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id2])
-                    model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] +1 >=
+                for jj in range(len(neighbours) - ii - 1):
+                    neighbour_id2 = neighbours[jj + ii + 1]
+                    model.addConstr(
+                        edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id1])
+                    model.addConstr(
+                        edge_combinations[node_id, neighbour_id1, neighbour_id2] <= variables[node_id, neighbour_id2])
+                    model.addConstr(edge_combinations[node_id, neighbour_id1, neighbour_id2] + 1 >=
                                     variables[node_id, neighbour_id2] + variables[node_id, neighbour_id1])
         model.update()
-
-
-
-
 
     if verbose:
         print "starting Optimization"
         print "Number of variables %i" % model.NumVars
-        print "Number of linear constraints %i" %model.NumConstrs
+        print "Number of linear constraints %i" % model.NumConstrs
     model.optimize()
     # Contains a label for each edge
     solution = model.getAttr("X", variables)
@@ -383,7 +383,7 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
 
     count2 = 0
     for edge, sol in solution.iteritems():
-        if n+1 in edge or n in edge:
+        if n + 1 in edge or n in edge:
             if sol == 1:
                 count2 += 1
         elif sol == 1:
@@ -406,4 +406,46 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost = 100, distance_cost=1, co
         return graph_solution, [model, solution]
 
 
+def validate_ILP(ground_truth_filename, test_filename, validation_parameter,
+                 results_outputfile, prior, scaling=[4.6, 4.6, 50], gt_additive=[0, 0, 0]):
+    print 'starting'
+    scaling = np.array(scaling)
+    gt_nx_skeleton = networkx_utils.from_filename_to_nx_skeleton(ground_truth_filename, scaling)
+    gt_nx_skeleton.scale_positions([1, 1, 1], additive=gt_additive)
+    test_nx_skeleton = networkx_utils.from_filename_to_nx_skeleton(test_filename, scaling)
+    print test_nx_skeleton.nx_graph.number_of_nodes(), 'number of nodes'
+    if test_nx_skeleton.nx_graph.number_of_nodes() < 3:
+        print " no nodes in skeleton"
+        return False
+    # Remove nodes from skeleton that are above a specific distance (mask)
+    masked_skeleton = networkx_utils.filter_nodes_based_on_distance(gt_nx_skeleton, test_nx_skeleton,
+                                                                    max_radius=validation_parameter['masked_radius'])
 
+    test_skeleton = networkx_utils.match_components_of_two_nx_skeletons_hungarian(gt_nx_skeleton, masked_skeleton,
+                                                                                  max_radius=validation_parameter[
+                                                                                      'allowed_max_distance'])
+    true_positive_skeleton, relabeled_test_skeleton, false_positive_nx_skeleton = \
+        networkx_utils.align_two_skeletons_based_on_partner(gt_nx_skeleton, test_skeleton)
+    print 'starting validation'
+    test_edgelist = relabeled_test_skeleton.nx_graph.edges()
+    ground_truth_edgelist = gt_nx_skeleton.nx_graph.edges()
+    edge_errors = utils.from_lists_to_precision_recall(ground_truth_edgelist, test_edgelist)
+    if not edge_errors:
+        return False
+    for key, value in edge_errors.iteritems():
+        utils.write_data_to_h5(results_outputfile, value, key + "_edgebased", overwrite=True, verbose=True)
+        utils.write_data_to_h5(results_outputfile, test_filename, 'validation_filename', overwrite=True)
+        utils.write_data_to_h5(results_outputfile, prior, 'prior', overwrite=True)
+        utils.print_dic(edge_errors)
+    masked_skeleton.scale_positions(scale_factor=1. / scaling)
+    outputfilename = test_filename.replace('.nml', '_masked_skeleton.nml')
+    knossos_utils.from_nx_graphs_to_knossos([masked_skeleton.nx_graph], outputfilename)
+
+    true_positive_skeleton.scale_positions(scale_factor=1. / scaling)
+    outputfilename = test_filename.replace('.nml', '_true_positive_skeleton.nml')
+    knossos_utils.from_nx_graphs_to_knossos([true_positive_skeleton.nx_graph], outputfilename)
+
+    false_positive_nx_skeleton.scale_positions(scale_factor=1. / scaling)
+    outputfilename = test_filename.replace('.nml', '_false_positive_skeleton.nml')
+    knossos_utils.from_nx_graphs_to_knossos([false_positive_nx_skeleton.nx_graph], outputfilename)
+    return True
