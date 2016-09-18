@@ -8,13 +8,23 @@ from skeleton import knossos_utils
 import skimage
 import argparse
 
+""" Extracts point candidates from a probability map.
+
+Simple workflow, gaussian smoothing is first applied, and then point candidates are extracted based on
+connected component analysis. Points are written out in knossos skeleton format.
+"""
+
 parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
-parser.add_argument('-preprocessing_threshold', type=float, default=0.7)
-parser.add_argument('-gaussian_sigma', type=float, default=0.5)
-parser.add_argument('-prob_map_inputfilename', default='default')
-parser.add_argument('-knossos_outputdirectory', default='default')
-parser.add_argument('-twodimensional', action='store_false')
-parser.add_argument('-voxel_size', type=float, default=[1.0, 1.0, 1.0], nargs='+',)
+parser.add_argument('-preprocessing_threshold', type=float, default=0.7,
+                    help='Float value, threshold for creating the binary image.')
+parser.add_argument('-gaussian_sigma', type=float, default=0.5, help='Float value, gaussian sigme for smoothing.')
+parser.add_argument('-prob_map_inputfilename', default='default', help='inputfilename for the probability map.')
+parser.add_argument('-knossos_outputdirectory', default='default',
+                    help='outputidrectory to which the results are writte in knossso skeleton format.')
+parser.add_argument('-twodimensional', action='store_false',
+                    help='if set to true, gaussian smoothing and connected component analysis '
+                         'is performed on individual sections. If set to false, the whole 3d stack is analysed at once.')
+parser.add_argument('-voxel_size', type=float, default=[1.0, 1.0, 1.0], nargs='+', )
 
 verbose = True
 
@@ -31,7 +41,7 @@ if results.twodimensional:
 else:
     twodim = "3D"
 outputfilename = results.knossos_outputdirectory + threshold_string + gaussian_sigma + twodim + "points.nml"
-print inputfile
+
 f = h5py.File(inputfile)
 data = f['exported_data'].value
 f.close()
