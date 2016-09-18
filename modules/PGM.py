@@ -5,19 +5,13 @@ try:
     from mayavi import mlab
 except ImportError:
     print 'mayavi not installed, visualization methods will not be available'
-import matplotlib.pyplot as plt
-import sys
-import math
 from gurobipy import *
 from gurobipy import Model
 import numpy as np
-from scipy.spatial import KDTree
 from skeleton import networkx_utils
-import networkx as nx
 from skeleton import knossos_utils
 import utils
 
-from numpy import genfromtxt
 import math
 
 
@@ -312,7 +306,7 @@ def calculate_ILP(g, quadratic=False, dummy_edge_cost=100, distance_cost=1, comb
                     neighbour_id2 = neighbours[jj + ii + 1]
                     spanning_angle = node_attr['spanning_angles'][(neighbour_id1, neighbour_id2)]
                     quad.add(variables[node_id, neighbour_id1] * variables[node_id, neighbour_id2] * (
-                    np.abs(spanning_angle - np.pi) * comb_angle_cost) ** 2)
+                        np.abs(spanning_angle - np.pi) * comb_angle_cost) ** 2)
 
         # Add linear costs to quadratic expression
         for edge in g.nx_graph.edges_iter(data=True):
